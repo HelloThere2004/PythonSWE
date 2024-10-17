@@ -10,7 +10,7 @@ def setup_logging(log_dir="logs"):
 
     # Create a valid filename
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_filename = f"pathfinderlog-{timestamp}.log"
+    log_filename = f"mtrack-tcp-application-{timestamp}.log"
     log_path = os.path.join(log_dir, log_filename)
 
     formatter = logging.Formatter(
