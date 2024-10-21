@@ -29,6 +29,11 @@ GET_USER_BY_USERNAME = """
     WHERE username = %s
 """
 
+GET_USER_BY_ID = """
+    SELECT * FROM users
+    WHERE id = %s
+"""
+
 GET_ALL_USERS = """
     SELECT * FROM users
 """
@@ -87,6 +92,21 @@ def get_user_by_username(cursor, username):
         return None
     except Exception as e:
         logger.error(f"Error retrieving user {username}: {e}")
+        raise
+
+@with_connection
+def get_user_by_id(cursor, user_id):
+    """
+    Retrieves a user by their ID.
+    """
+    try:
+        cursor.execute(GET_USER_BY_ID, (user_id,))
+        result = cursor.fetchone()
+        if result:
+            return dict(zip([column[0] for column in cursor.description], result))
+        return None
+    except Exception as e:
+        logger.error(f"Error retrieving user with ID {user_id}: {e}")
         raise
 
 @with_connection

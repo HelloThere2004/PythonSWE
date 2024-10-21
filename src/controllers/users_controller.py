@@ -1,7 +1,7 @@
 import logging
 import jwt
 from werkzeug.security import check_password_hash, generate_password_hash
-from src.data_models.user_data_model import get_user_by_username, update_user, delete_user
+from src.data_models.user_data_model import get_user_by_username, update_user, delete_user, get_user_by_id
 from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
@@ -60,4 +60,20 @@ def delete_user_account(user_id):
             return None
     except Exception as e:
         logger.error(f"Error deleting account for user {user_id}: {e}")
+        raise
+
+def find_user_by_id(user_id):
+    """
+    Finds a user by their ID.
+    """
+    try:
+        user = get_user_by_id(user_id)
+        if user:
+            logger.info(f"User with ID {user_id} found.")
+            return user
+        else:
+            logger.warning(f"User with ID {user_id} not found.")
+            return None
+    except Exception as e:
+        logger.error(f"Error retrieving user with ID {user_id}: {e}")
         raise
