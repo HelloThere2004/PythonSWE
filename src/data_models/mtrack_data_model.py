@@ -21,6 +21,28 @@ INSERT_ASSET_DATA = """
     VALUES %s
 """
 
+GET_LAST_ASSET_DATA = """
+    SELECT ad.*, l.latitude, l.longitude
+    FROM asset_data ad
+    JOIN locations l ON ad.location_id = l.location_id
+    WHERE ad.device_id = %s
+    ORDER BY ad.inserted_at DESC
+    LIMIT 1
+"""
+
+GET_DEVICE_LOCATIONS = """
+    SELECT DISTINCT ON (l.latitude, l.longitude) l.latitude, l.longitude, ad.inserted_at
+    FROM asset_data ad
+    JOIN locations l ON ad.location_id = l.location_id
+    WHERE ad.device_id = %s
+    ORDER BY l.latitude, l.longitude, ad.inserted_at DESC
+"""
+
+GET_ALL_DEVICES = """
+    SELECT * FROM devices
+"""
+
+
 def insert_device(cursor, device_id):
     try:
         cursor.execute(INSERT_DEVICE, (device_id,))
@@ -73,4 +95,31 @@ def upload_data(conn, parsed_data):
     except Exception as e:
         conn.rollback()
         logger.error(f"Error uploading data: {e}")
+        raise
+
+def get_last_asset_data(cursor, device_id):
+    try:
+        cursor.execute(GET_LAST_ASSET_DATA, (device_id,))
+        result = cursor.fetchone()
+        if result:
+            return dict(zip([column[0] for column in cursor.description], result))
+        return None
+    except Exception as e:
+        logger.error(f"Error retrieving last asset data for device {device_id}: {e}")
+        raise
+
+def get_device_locations(cursor, device_id):
+    try:
+        cursor.execute(GET_DEVICE_LOCATIONS, (device_id,))
+        return [{"latitude": row[0], "longitude": row[1], "timestamp": row[2]} for row in cursor.fetchall()]
+    except Exception as e:
+        logger.error(f"Error retrieving locations for device {device_id}: {e}")
+        raise
+
+def get_all_devices(cursor):
+    try:
+        cursor.execute(GET_ALL_DEVICES)
+        return [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+    except Exception as e:
+        logger.error(f"Error retrieving all devices: {e}")
         raise
