@@ -35,3 +35,10 @@ CREATE INDEX idx_asset_data_device_id_inserted_at ON asset_data(device_id, inser
 
 -- Create index on location_id for faster joins
 CREATE INDEX idx_asset_data_location_id ON asset_data(location_id);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(65) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
