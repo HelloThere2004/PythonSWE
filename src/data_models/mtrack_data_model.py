@@ -1,5 +1,6 @@
 import logging
 from psycopg2.extras import execute_values
+from src.config.postgresql import get_db_connection
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,14 @@ GET_ALL_DEVICES = """
     SELECT * FROM devices
 """
 
+def with_connection(func):
+    def wrapper(*args, **kwargs):
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                return func(cur, *args, **kwargs)
+    return wrapper
 
+@with_connection
 def insert_device(cursor, device_id):
     try:
         cursor.execute(INSERT_DEVICE, (device_id,))
@@ -51,6 +59,7 @@ def insert_device(cursor, device_id):
         logger.error(f"Error inserting device {device_id}: {e}")
         raise
 
+@with_connection
 def insert_location(cursor, latitude, longitude):
     try:
         cursor.execute(INSERT_LOCATION, (latitude, longitude))
@@ -61,6 +70,7 @@ def insert_location(cursor, latitude, longitude):
         logger.error(f"Error inserting location: {e}")
         raise
 
+@with_connection
 def insert_asset_data(cursor, data, location_id):
     try:
         values = [(
@@ -78,25 +88,24 @@ def insert_asset_data(cursor, data, location_id):
         logger.error(f"Error inserting asset data: {e}")
         raise
 
-def upload_data(conn, parsed_data):
+@with_connection
+def upload_data(cursor, parsed_data):
     try:
-        with conn.cursor() as cur:
-            # Insert or update device
-            insert_device(cur, parsed_data['deviceId'])
+        # Insert or update device
+        insert_device(cursor, parsed_data['deviceId'])
 
-            # Insert location
-            location_id = insert_location(cur, parsed_data['latitude'], parsed_data['longitude'])
+        # Insert location
+        location_id = insert_location(cursor, parsed_data['latitude'], parsed_data['longitude'])
 
-            # Insert asset data
-            insert_asset_data(cur, parsed_data, location_id)
+        # Insert asset data
+        insert_asset_data(cursor, parsed_data, location_id)
 
-        conn.commit()
         logger.info(f"Data uploaded successfully for device: {parsed_data['deviceId']}")
     except Exception as e:
-        conn.rollback()
         logger.error(f"Error uploading data: {e}")
         raise
 
+@with_connection
 def get_last_asset_data(cursor, device_id):
     try:
         cursor.execute(GET_LAST_ASSET_DATA, (device_id,))
@@ -108,6 +117,7 @@ def get_last_asset_data(cursor, device_id):
         logger.error(f"Error retrieving last asset data for device {device_id}: {e}")
         raise
 
+@with_connection
 def get_device_locations(cursor, device_id):
     try:
         cursor.execute(GET_DEVICE_LOCATIONS, (device_id,))
@@ -116,6 +126,7 @@ def get_device_locations(cursor, device_id):
         logger.error(f"Error retrieving locations for device {device_id}: {e}")
         raise
 
+@with_connection
 def get_all_devices(cursor):
     try:
         cursor.execute(GET_ALL_DEVICES)

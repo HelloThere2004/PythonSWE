@@ -1,5 +1,4 @@
 import logging
-from src.config.postgresql import get_db_connection
 from src.data_models.mtrack_data_model import upload_data
 
 logger = logging.getLogger(__name__)
@@ -54,8 +53,7 @@ def process_message(message):
     parsed_data = parse_device_message(message)
     if parsed_data:
         try:
-            with get_db_connection() as conn:
-                upload_data(conn, parsed_data)
+            upload_data(parsed_data)
         except Exception as e:
             logger.error(f"Error processing message: {e}")
     else:
