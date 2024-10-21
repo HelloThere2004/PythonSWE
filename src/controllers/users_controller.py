@@ -3,11 +3,11 @@ import jwt
 from werkzeug.security import check_password_hash, generate_password_hash
 from src.data_models.user_data_model import get_user_by_username, update_user, delete_user, get_user_by_id
 from datetime import datetime, timedelta
+from src.config.env_loader import SECRET_KEY
 
 logger = logging.getLogger(__name__)
 
-# Secret key for JWT (use a strong, secure secret key)
-SECRET_KEY = 'innov@ti0n'
+
 
 def generate_token(user_id, username):
     """

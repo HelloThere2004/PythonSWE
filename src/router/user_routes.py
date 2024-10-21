@@ -3,6 +3,7 @@ from flask import jsonify, request, abort
 from werkzeug.security import generate_password_hash
 from src.controllers.users_controller import login_user, update_user_profile, delete_user_account
 from werkzeug.exceptions import NotFound, BadRequest
+from src.middleware.auth_middleware import token_required
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,10 @@ def init_user_routes(app):
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
     @app.route('/profile/update', methods=['PUT'])
+    @token_required
     def update_profile():
         data = request.json
-        user_id = data.get('user_id')  # Assuming user_id is passed
+        user_id = data.get('user_id')
         new_username = data.get('new_username')
         new_password = data.get('new_password')
 
@@ -55,9 +57,10 @@ def init_user_routes(app):
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
     @app.route('/profile/delete', methods=['DELETE'])
+    @token_required
     def delete_account():
         data = request.json
-        user_id = data.get('user_id')  # Assuming user_id is passed
+        user_id = data.get('user_id')
 
         if not user_id:
             logger.warning("Missing user_id in delete request")

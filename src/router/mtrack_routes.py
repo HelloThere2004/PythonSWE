@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from werkzeug.exceptions import NotFound
 from src.controllers.mtrack_controller import get_device_last_data, get_device_location_history, get_devices
+from src.middleware.auth_middleware import token_required
 import logging
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,7 @@ def init_routes(app):
         return jsonify(error="Internal Server Error", message=str(error)), 500
 
     @app.route('/devices/<string:device_id>/last_data')
+    @token_required
     def device_last_data(device_id):
         try:
             result = get_device_last_data(device_id)
@@ -26,6 +28,7 @@ def init_routes(app):
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
     @app.route('/devices/<string:device_id>/locations')
+    @token_required
     def device_locations(device_id):
         try:
             result = get_device_location_history(device_id)
@@ -35,6 +38,7 @@ def init_routes(app):
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
     @app.route('/devices')
+    @token_required
     def all_devices():
         try:
             result = get_devices()
