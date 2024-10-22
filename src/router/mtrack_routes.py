@@ -12,7 +12,7 @@ def init_routes(app):
         logger.error(f"500 Internal Server Error: {str(error)}, Route: {request.url}")
         return jsonify(error="Internal Server Error", message=str(error)), 500
 
-    @app.route('/devices/<string:device_id>/last_data')
+    @app.route('/api/devices/<string:device_id>/last_data')
     @token_required
     def device_last_data(device_id):
         try:
@@ -27,7 +27,7 @@ def init_routes(app):
             logger.error(f"Error in device_last_data: {str(e)}")
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
-    @app.route('/devices/<string:device_id>/locations')
+    @app.route('/api/devices/<string:device_id>/locations')
     @token_required
     def device_locations(device_id):
         try:
@@ -37,7 +37,7 @@ def init_routes(app):
             logger.error(f"Error in device_locations: {str(e)}")
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
-    @app.route('/devices')
+    @app.route('/api/devices')
     @token_required
     def all_devices():
         try:

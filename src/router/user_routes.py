@@ -8,7 +8,7 @@ from src.middleware.auth_middleware import token_required
 logger = logging.getLogger(__name__)
 
 def init_user_routes(app):
-    @app.route('/login', methods=['POST'])
+    @app.route('/api/login', methods=['POST'])
     def login():
         data = request.json
         username = data.get('username')
@@ -31,7 +31,7 @@ def init_user_routes(app):
             logger.error(f"Error during login: {str(e)}")
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
-    @app.route('/profile/update', methods=['PUT'])
+    @app.route('/api/profile/update', methods=['PUT'])
     @token_required
     def update_profile():
         data = request.json
@@ -56,7 +56,7 @@ def init_user_routes(app):
             logger.error(f"Error updating profile for user_id {user_id}: {str(e)}")
             return jsonify(error="Internal Server Error", message="An unexpected error occurred"), 500
 
-    @app.route('/profile/delete', methods=['DELETE'])
+    @app.route('/api/profile/delete', methods=['DELETE'])
     @token_required
     def delete_account():
         data = request.json
