@@ -2,11 +2,11 @@ import socket
 import time
 
 # Server address and port
-host = "localhost"
+host = "54.198.44.195"
 port = 23304
 
 # Message to be sent
-message = "#860186023232004#MT700#0000#AUTO#1\r\n#36$GPRMC,082947.00,A,1046.6411,N,10640.8207,E,8.50,121.40,071024,,,A*5A\r\n##\r\n"
+message = "#860186023032004#MT700#0000#AUTO#1\r\n#36$GPRMC,082947.00,A,1046.6411,N,10640.8207,E,8.50,121.40,071024,,,A*5A\r\n##\r\n"
 
 def send_message():
     # Create a socket object

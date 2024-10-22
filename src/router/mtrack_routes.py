@@ -12,7 +12,7 @@ def init_routes(app):
         logger.error(f"500 Internal Server Error: {str(error)}, Route: {request.url}")
         return jsonify(error="Internal Server Error", message=str(error)), 500
 
-    @app.route('/api/devices/<string:device_id>/last_data')
+    @app.route('/api/devices/<string:device_id>/last-data')
     @token_required
     def device_last_data(device_id):
         try:
