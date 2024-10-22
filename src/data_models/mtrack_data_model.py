@@ -92,13 +92,13 @@ def insert_asset_data(cursor, data, location_id):
 def upload_data(cursor, parsed_data):
     try:
         # Insert or update device
-        insert_device(cursor, parsed_data['deviceId'])
+        insert_device(parsed_data['deviceId'])
 
         # Insert location
-        location_id = insert_location(cursor, parsed_data['latitude'], parsed_data['longitude'])
+        location_id = insert_location(parsed_data['latitude'], parsed_data['longitude'])
 
         # Insert asset data
-        insert_asset_data(cursor, parsed_data, location_id)
+        insert_asset_data(parsed_data, location_id)
 
         logger.info(f"Data uploaded successfully for device: {parsed_data['deviceId']}")
     except Exception as e:
