@@ -2,7 +2,15 @@ import logging
 from flask import jsonify, request
 from werkzeug.exceptions import NotFound, BadRequest
 from src.middleware.auth_middleware import token_required
-from src.controllers.notification_controller import NotificationController
+from src.controllers.notification_controller import (
+    create_device_notification,
+    get_notification_by_id,
+    acknowledge_notification,
+    update_notification_status,
+    remove_notification,
+    get_notifications_for_device,
+    get_all_pending_notifications
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +29,11 @@ def init_notification_routes(app):
                          message="Missing required fields: device_id, type, message"), 400
 
         try:
-            notification = NotificationController.create_device_notification(
+            notification = create_device_notification(
                 device_id=data['device_id'],
                 notification_type=data['type'],
                 message=data['message'],
-                asset_data_id=data.get('asset_data_id'),
-                token=request.token  # Token from @token_required decorator
+                asset_data_id=data.get('asset_data_id')
             )
             return jsonify(notification), 201
         except ValueError as e:
@@ -42,10 +49,7 @@ def init_notification_routes(app):
     def get_notification(notification_id):
         """Get a specific notification by ID"""
         try:
-            notification = NotificationController.get_notification_by_id(
-                notification_id=notification_id,
-                token=request.token
-            )
+            notification = get_notification_by_id(notification_id)
             if not notification:
                 raise NotFound("Notification not found")
             return jsonify(notification), 200
@@ -59,12 +63,12 @@ def init_notification_routes(app):
 
     @app.route('/api/notifications/<int:notification_id>/acknowledge', methods=['PUT'])
     @token_required
-    def acknowledge_notification(notification_id):
+    def acknowledge_notification_route(notification_id):
         """Acknowledge a notification"""
         try:
-            notification = NotificationController.acknowledge_notification(
+            notification = acknowledge_notification(
                 notification_id=notification_id,
-                token=request.token
+                user_id=request.user_id  # Assuming middleware adds user_id to request
             )
             if not notification:
                 raise NotFound("Notification not found")
@@ -87,11 +91,10 @@ def init_notification_routes(app):
             return jsonify(error="Bad Request", message="Status is required"), 400
 
         try:
-            notification = NotificationController.update_notification_status(
+            notification = update_notification_status(
                 notification_id=notification_id,
                 status=data['status'],
-                message=data.get('message'),
-                token=request.token
+                message=data.get('message')
             )
             if not notification:
                 raise NotFound("Notification not found")
@@ -112,10 +115,7 @@ def init_notification_routes(app):
     def delete_notification(notification_id):
         """Delete a notification"""
         try:
-            result = NotificationController.remove_notification(
-                notification_id=notification_id,
-                token=request.token
-            )
+            result = remove_notification(notification_id)
             if not result:
                 raise NotFound("Notification not found")
             return jsonify(message="Notification deleted successfully"), 200
@@ -132,10 +132,7 @@ def init_notification_routes(app):
     def get_device_notifications(device_id):
         """Get all notifications for a specific device"""
         try:
-            notifications = NotificationController.get_notifications_for_device(
-                device_id=device_id,
-                token=request.token
-            )
+            notifications = get_notifications_for_device(device_id)
             return jsonify(notifications), 200
         except Exception as e:
             logger.error(f"Error retrieving notifications for device {device_id}: {str(e)}")
@@ -147,16 +144,13 @@ def init_notification_routes(app):
     def get_pending_notifications():
         """Get all pending notifications"""
         try:
-            notifications = NotificationController.get_all_pending_notifications(
-                token=request.token
-            )
+            notifications = get_all_pending_notifications()
             return jsonify(notifications), 200
         except Exception as e:
             logger.error(f"Error retrieving pending notifications: {str(e)}")
             return jsonify(error="Internal Server Error",
                          message="An unexpected error occurred"), 500
 
-    # Optional: Add batch operations endpoint
     @app.route('/api/notifications/batch/acknowledge', methods=['PUT'])
     @token_required
     def batch_acknowledge_notifications():
@@ -170,9 +164,9 @@ def init_notification_routes(app):
         try:
             results = []
             for notification_id in data['notification_ids']:
-                notification = NotificationController.acknowledge_notification(
+                notification = acknowledge_notification(
                     notification_id=notification_id,
-                    token=request.token
+                    user_id=request.user_id  # Assuming middleware adds user_id to request
                 )
                 if notification:
                     results.append(notification)

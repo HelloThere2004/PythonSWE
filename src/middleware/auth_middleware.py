@@ -35,6 +35,7 @@ def token_required(f):
 
             # Add user to the request context
             request.user = user
+            request.user_id = user_id
         except jwt.ExpiredSignatureError:
             logger.warning("Expired token received")
             return jsonify({'message': 'Token has expired!'}), 401
