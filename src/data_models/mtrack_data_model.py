@@ -43,6 +43,24 @@ GET_ALL_DEVICES = """
     SELECT * FROM devices
 """
 
+GET_ASSET_DATA_BY_DATE_RANGE = """
+    SELECT
+        ad.device_id,
+        ad.voltage,
+        ad.status,
+        ad.current_speed,
+        ad.gps_date,
+        ad.gps_time,
+        ad.inserted_at,
+        l.latitude,
+        l.longitude
+    FROM asset_data ad
+    JOIN locations l ON ad.location_id = l.location_id
+    WHERE ad.device_id = %s
+    AND ad.inserted_at BETWEEN %s AND %s
+    ORDER BY ad.inserted_at DESC
+"""
+
 def with_connection(func):
     def wrapper(*args, **kwargs):
         with get_db_connection() as conn:
@@ -133,4 +151,25 @@ def get_all_devices(cursor):
         return [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
     except Exception as e:
         logger.error(f"Error retrieving all devices: {e}")
+        raise
+
+@with_connection
+def get_asset_data_by_date_range(cursor, device_id, start_date, end_date):
+    """
+    Retrieve asset data with location information for a specific device within a date range.
+
+    Args:
+        device_id: The ID of the device to query
+        start_date: The start date of the range (datetime or string in ISO format)
+        end_date: The end date of the range (datetime or string in ISO format)
+
+    Returns:
+        List of dictionaries containing asset data with location information
+    """
+    try:
+        cursor.execute(GET_ASSET_DATA_BY_DATE_RANGE, (device_id, start_date, end_date))
+        results = cursor.fetchall()
+        return [dict(zip([column[0] for column in cursor.description], row)) for row in results]
+    except Exception as e:
+        logger.error(f"Error retrieving asset data for device {device_id} between {start_date} and {end_date}: {e}")
         raise

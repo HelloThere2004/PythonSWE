@@ -1,7 +1,81 @@
 import logging
 from src.data_models.mtrack_data_model import upload_data
+from src.data_models.notification_data_model import (
+    create_notification,
+    get_device_notifications
+)
 
 logger = logging.getLogger(__name__)
+
+# Battery threshold constants
+BATTERY_CRITICAL = 33.0
+BATTERY_LOW = 35.0
+BATTERY_MEDIUM = 37.0
+
+def check_battery_status(voltage):
+    """
+    Determine battery status based on voltage thresholds.
+    Returns tuple of (status_type, message) or (None, None) if no notification needed.
+    """
+    if voltage <= BATTERY_CRITICAL:
+        return ('low_battery', f'CRITICAL: Device battery at critical level ({voltage / 10}V)')
+    elif voltage < BATTERY_LOW:
+        return ('low_battery', f'WARNING: Device battery is low ({voltage / 10}V)')
+    elif voltage < BATTERY_MEDIUM:
+        return ('low_battery', f'NOTICE: Device battery is at medium level ({voltage / 10}V)')
+    return None, None
+
+def should_create_battery_notification(device_id, voltage):
+    """
+    Check if a new battery notification should be created based on existing notifications.
+    """
+    try:
+        # Get recent notifications for the device
+        device_notifications = get_device_notifications(device_id)
+
+        # Filter for active battery notifications
+        battery_notifications = [
+            n for n in device_notifications
+            if n['type'] == 'low_battery'
+            and n['status'] in ('pending', 'sent')
+        ]
+
+        if not battery_notifications:
+            return True
+
+        # Get the most recent battery notification
+        latest_notification = max(
+            battery_notifications,
+            key=lambda x: x['created_at']
+        )
+
+        # Extract voltage from the latest notification message
+        # Assuming message format includes voltage in parentheses like "... (35.5V)"
+        current_notif_voltage = float(
+            latest_notification['message']
+            .split('(')[1]
+            .split('V')[0]
+        )
+
+        # Determine voltage threshold categories
+        def get_threshold_category(v):
+            if v <= BATTERY_CRITICAL:
+                return "critical"
+            elif v < BATTERY_LOW:
+                return "low"
+            elif v < BATTERY_MEDIUM:
+                return "medium"
+            return "normal"
+
+        # Only create new notification if voltage category has changed
+        current_category = get_threshold_category(current_notif_voltage)
+        new_category = get_threshold_category(voltage)
+
+        return current_category != new_category
+
+    except Exception as e:
+        logger.error(f"Error checking battery notifications: {e}")
+        return True  # Create notification if there's an error checking
 
 def parse_device_message(msg):
     try:
@@ -49,11 +123,40 @@ def parse_device_message(msg):
         logger.error(f"Error parsing message: {e}")
         return None
 
+def handle_battery_notification(device_id, voltage, asset_data_id):
+    """
+    Handle battery notification creation based on voltage levels.
+    """
+    try:
+        notification_type, message = check_battery_status(voltage)
+
+        if notification_type and should_create_battery_notification(device_id, voltage):
+            notification = create_notification(
+                device_id=device_id,
+                notification_type=notification_type,
+                message=message,
+                asset_data_id=asset_data_id
+            )
+            logger.info(f"Created battery notification for device {device_id}: {message}")
+            return notification
+        return None
+    except Exception as e:
+        logger.error(f"Error handling battery notification: {e}")
+        return None
+
 def process_message(message):
     parsed_data = parse_device_message(message)
     if parsed_data:
         try:
-            upload_data(parsed_data)
+            # Upload data and get the asset_data_id
+            asset_data_id = upload_data(parsed_data)
+
+            # Handle battery notifications
+            voltage = parsed_data['voltage']
+            device_id = parsed_data['deviceId']
+
+            handle_battery_notification(device_id, voltage, asset_data_id)
+
         except Exception as e:
             logger.error(f"Error processing message: {e}")
     else:
